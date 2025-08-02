@@ -21,6 +21,7 @@ export type Database = {
           id: string
           member_id: string | null
           start_date: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -28,6 +29,7 @@ export type Database = {
           id?: string
           member_id?: string | null
           start_date: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -35,6 +37,7 @@ export type Database = {
           id?: string
           member_id?: string | null
           start_date?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -107,6 +110,7 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          role: string | null
         }
         Insert: {
           created_at?: string | null
@@ -114,6 +118,7 @@ export type Database = {
           first_name?: string | null
           id: string
           last_name?: string | null
+          role?: string | null
         }
         Update: {
           created_at?: string | null
@@ -121,6 +126,40 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          role?: string | null
+        }
+        Relationships: []
+      }
+      rotations: {
+        Row: {
+          absents: string[] | null
+          date: string | null
+          eighteen: string[] | null
+          generated_at: string | null
+          generated_by: string | null
+          id: string
+          missing: number | null
+          sixteen: string[] | null
+        }
+        Insert: {
+          absents?: string[] | null
+          date?: string | null
+          eighteen?: string[] | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          missing?: number | null
+          sixteen?: string[] | null
+        }
+        Update: {
+          absents?: string[] | null
+          date?: string | null
+          eighteen?: string[] | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          missing?: number | null
+          sixteen?: string[] | null
         }
         Relationships: []
       }
