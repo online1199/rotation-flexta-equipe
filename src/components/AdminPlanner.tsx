@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { generateScheduleWithLeaves } from '@/lib/rotation';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useSupabaseStore } from '@/store/useSupabaseStore';
+import { useScheduleStore } from '@/store/useScheduleStore';
 
 interface GeneratedDay {
   date: string;
@@ -27,7 +27,7 @@ interface GeneratedDay {
 export function AdminPlanner() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { members } = useSupabaseStore();
+  const { teamMembers } = useScheduleStore();
   
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [numberOfDays, setNumberOfDays] = useState(30);
@@ -36,7 +36,7 @@ export function AdminPlanner() {
   const [generatedSchedule, setGeneratedSchedule] = useState<GeneratedDay[]>([]);
 
   const handleGenerateAndSave = async () => {
-    if (members.length !== 5) {
+    if (teamMembers.length !== 5) {
       toast({
         title: "Équipe incomplète",
         description: "L'équipe doit contenir exactement 5 membres pour générer un planning.",
@@ -57,9 +57,14 @@ export function AdminPlanner() {
     setIsGenerating(true);
     
     try {
-      // Generate schedule
+      const people = teamMembers.map(member => ({
+        id: member.id,
+        name: member.name,
+        leaves: member.leaves || []
+      }));
+      
       const scheduleAssignments = generateScheduleWithLeaves(
-        members,
+        people,
         startDate,
         numberOfDays,
         skipWeekends
@@ -194,15 +199,15 @@ export function AdminPlanner() {
 
           {/* Team status */}
           <div className="flex items-center gap-2 p-3 rounded-lg bg-muted">
-            {members.length === 5 ? (
+            {teamMembers.length === 5 ? (
               <>
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <span className="text-sm">Équipe complète ({members.length}/5 membres)</span>
+                <span className="text-sm">Équipe complète ({teamMembers.length}/5 membres)</span>
               </>
             ) : (
               <>
                 <AlertTriangle className="h-4 w-4 text-orange-600" />
-                <span className="text-sm">Équipe incomplète ({members.length}/5 membres)</span>
+                <span className="text-sm">Équipe incomplète ({teamMembers.length}/5 membres)</span>
               </>
             )}
           </div>
@@ -211,7 +216,7 @@ export function AdminPlanner() {
           <div className="flex gap-3">
             <Button 
               onClick={handleGenerateAndSave}
-              disabled={members.length !== 5 || isGenerating}
+              disabled={teamMembers.length !== 5 || isGenerating}
               className="flex-1"
             >
               {isGenerating ? "Génération en cours..." : "Générer et sauvegarder le planning"}
