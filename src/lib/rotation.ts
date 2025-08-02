@@ -1,6 +1,7 @@
 import { format, addDays, isWeekend } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
-import type { Assignment } from './types';
+import type { Assignment, Person } from './types';
+import { toISO, isOnLeave } from './date';
 
 /**
  * Génère un planning de rotation équitable pour une équipe de 5 personnes
@@ -58,6 +59,8 @@ export function generateSchedule(
         dateISO,
         eighteen: rotatedNames.slice(0, 3),
         sixteen: rotatedNames.slice(3, 5),
+        absents: [],
+        missing: 0,
         locked: false
       });
     }
@@ -69,6 +72,48 @@ export function generateSchedule(
   }
 
   return result;
+}
+
+type LockedMap = Record<string, Assignment>;
+
+export function generateScheduleWithLeaves(
+  people: Person[],
+  start: Date,
+  days: number,
+  skipWeekends: boolean,
+  locked: LockedMap = {}
+): Assignment[] {
+  if (people.length !== 5) throw new Error("Il faut exactement 5 personnes.");
+  const names = people.map(p => p.name);
+  const out: Assignment[] = [];
+  let d = 0;
+
+  for (let i = 0, cur = new Date(start); i < days; ) {
+    const isWE = [0,6].includes(cur.getDay());
+    const iso = toISO(cur);
+    if (skipWeekends && isWE) { cur.setDate(cur.getDate()+1); continue; }
+
+    if (locked[iso]) {
+      out.push(locked[iso]);
+    } else {
+      const shift = d % 5;
+      const rotated = names.slice(shift).concat(names.slice(0, shift));
+      const absents = people.filter(p => isOnLeave(iso, p.leaves)).map(p => p.name);
+      const available = rotated.filter(n => !absents.includes(n));
+
+      const eighteen = available.slice(0, Math.min(3, available.length));
+      const rest = available.slice(eighteen.length);
+      const sixteen = rest.slice(0, Math.min(2, rest.length));
+
+      const filled = eighteen.length + sixteen.length;
+      const missing = Math.max(0, 5 - absents.length - filled);
+
+      out.push({ dateISO: iso, eighteen, sixteen, absents, missing });
+    }
+
+    d += 1; i += 1; cur.setDate(cur.getDate()+1);
+  }
+  return out;
 }
 
 /**

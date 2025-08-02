@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import type { TeamMember, Assignment, PlannerParams, ScheduleState } from '@/lib/types';
-import { generateSchedule, generateInitials } from '@/lib/rotation';
+import type { TeamMember, Assignment, PlannerParams, ScheduleState, LeaveRange } from '@/lib/types';
+import { generateSchedule, generateScheduleWithLeaves, generateInitials } from '@/lib/rotation';
 import { saveScheduleState, loadScheduleState } from '@/lib/storage';
 
 interface ScheduleStore extends ScheduleState {
@@ -10,10 +10,13 @@ interface ScheduleStore extends ScheduleState {
   addTeamMember: (name: string) => void;
   removeTeamMember: (id: string) => void;
   updateTeamMember: (id: string, name: string) => void;
+  addLeaveToMember: (memberId: string, leave: LeaveRange) => void;
+  removeLeaveFromMember: (memberId: string, leaveIndex: number) => void;
   reorderTeamMembers: (fromIndex: number, toIndex: number) => void;
   
   setPlannerParams: (params: PlannerParams) => void;
   generateSchedule: () => void;
+  regenerateSchedule: () => void;
   
   lockDay: (dateISO: string, assignment: Assignment) => void;
   unlockDay: (dateISO: string) => void;
@@ -56,7 +59,8 @@ export const useScheduleStore = create<ScheduleStore>()(
         const newMember: TeamMember = {
           id: crypto.randomUUID(),
           name: name.trim(),
-          initials: generateInitials(name.trim())
+          initials: generateInitials(name.trim()),
+          leaves: []
         };
         
         const updatedMembers = [...teamMembers, newMember];
@@ -97,6 +101,28 @@ export const useScheduleStore = create<ScheduleStore>()(
         saveScheduleState({ plannerParams: params });
       },
 
+      addLeaveToMember: (memberId, leave) => {
+        const { teamMembers } = get();
+        const updatedMembers = teamMembers.map(member =>
+          member.id === memberId
+            ? { ...member, leaves: [...member.leaves, leave] }
+            : member
+        );
+        set({ teamMembers: updatedMembers });
+        saveScheduleState({ teamMembers: updatedMembers });
+      },
+
+      removeLeaveFromMember: (memberId, leaveIndex) => {
+        const { teamMembers } = get();
+        const updatedMembers = teamMembers.map(member =>
+          member.id === memberId
+            ? { ...member, leaves: member.leaves.filter((_, index) => index !== leaveIndex) }
+            : member
+        );
+        set({ teamMembers: updatedMembers });
+        saveScheduleState({ teamMembers: updatedMembers });
+      },
+
       generateSchedule: () => {
         const { teamMembers, plannerParams, lockedDays } = get();
         
@@ -104,9 +130,41 @@ export const useScheduleStore = create<ScheduleStore>()(
           throw new Error("Il faut exactement 5 personnes pour générer le planning.");
         }
 
-        const memberNames = teamMembers.map(member => member.name);
-        const assignments = generateSchedule(
-          memberNames,
+        // Utiliser la nouvelle fonction avec gestion des congés
+        const people = teamMembers.map(member => ({
+          id: member.id,
+          name: member.name,
+          leaves: member.leaves
+        }));
+
+        const assignments = generateScheduleWithLeaves(
+          people,
+          plannerParams.startDate,
+          plannerParams.numberOfDays,
+          plannerParams.skipWeekends,
+          lockedDays
+        );
+
+        set({ assignments });
+        saveScheduleState({ assignments });
+      },
+
+      regenerateSchedule: () => {
+        const { teamMembers, plannerParams, lockedDays } = get();
+        
+        if (teamMembers.length !== 5) {
+          throw new Error("Il faut exactement 5 personnes pour générer le planning.");
+        }
+
+        // Utiliser la nouvelle fonction avec gestion des congés
+        const people = teamMembers.map(member => ({
+          id: member.id,
+          name: member.name,
+          leaves: member.leaves
+        }));
+
+        const assignments = generateScheduleWithLeaves(
+          people,
           plannerParams.startDate,
           plannerParams.numberOfDays,
           plannerParams.skipWeekends,
@@ -151,9 +209,17 @@ export const useScheduleStore = create<ScheduleStore>()(
 
       loadFromStorage: () => {
         const stored = loadScheduleState();
+        
+        // Migration: s'assurer que tous les membres ont le champ leaves
+        const migratedMembers = stored.teamMembers?.map(member => ({
+          ...member,
+          leaves: member.leaves || []
+        })) || [];
+
         set(state => ({ 
           ...state, 
           ...stored,
+          teamMembers: migratedMembers,
           // S'assurer que plannerParams a toujours une valeur par défaut
           plannerParams: stored.plannerParams || initialState.plannerParams
         }));

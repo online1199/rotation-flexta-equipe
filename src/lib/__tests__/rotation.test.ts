@@ -110,6 +110,8 @@ describe('generateSchedule', () => {
       dateISO: '2024-01-02',
       eighteen: ['Eve', 'Diana', 'Charlie'],
       sixteen: ['Bob', 'Alice'],
+      absents: [],
+      missing: 0,
       locked: true
     };
     

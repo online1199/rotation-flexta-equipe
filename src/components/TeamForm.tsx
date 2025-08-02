@@ -6,10 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Trash2, Plus, Edit2, Check, X } from 'lucide-react';
 import { useScheduleStore } from '@/store/useScheduleStore';
+import { LeaveManager } from './LeaveManager';
 import { toast } from '@/hooks/use-toast';
 
 export function TeamForm() {
-  const { teamMembers, addTeamMember, removeTeamMember, updateTeamMember } = useScheduleStore();
+  const { teamMembers, addTeamMember, removeTeamMember, updateTeamMember, addLeaveToMember, removeLeaveFromMember } = useScheduleStore();
   const [newMemberName, setNewMemberName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
@@ -189,6 +190,17 @@ export function TeamForm() {
                       </Button>
                     </div>
                   </div>
+                )}
+                
+                {/* Gestionnaire des congés */}
+                {editingId !== member.id && (
+                  <LeaveManager
+                    memberId={member.id}
+                    memberName={member.name}
+                    leaves={member.leaves}
+                    onAddLeave={(leave) => addLeaveToMember(member.id, leave)}
+                    onRemoveLeave={(index) => removeLeaveFromMember(member.id, index)}
+                  />
                 )}
               </div>
             </div>

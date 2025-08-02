@@ -13,7 +13,7 @@ import { getDistributionStats } from '@/lib/rotation';
 const ITEMS_PER_PAGE = 7;
 
 export function ScheduleList() {
-  const { teamMembers, assignments, generateSchedule: regenerateSchedule } = useScheduleStore();
+  const { teamMembers, assignments, lockedDays, regenerateSchedule } = useScheduleStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
 
@@ -25,10 +25,11 @@ export function ScheduleList() {
     const date = new Date(assignment.dateISO);
     const dateStr = format(date, 'dd/MM/yyyy EEEE', { locale: fr });
     
-    // Recherche dans la date ou les noms
+    // Recherche dans la date ou les noms (y compris absents)
     return dateStr.toLowerCase().includes(searchLower) ||
            assignment.eighteen.some(name => name.toLowerCase().includes(searchLower)) ||
-           assignment.sixteen.some(name => name.toLowerCase().includes(searchLower));
+           assignment.sixteen.some(name => name.toLowerCase().includes(searchLower)) ||
+           (assignment.absents && assignment.absents.some(name => name.toLowerCase().includes(searchLower)));
   });
 
   // Pagination

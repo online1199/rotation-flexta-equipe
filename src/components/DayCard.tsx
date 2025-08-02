@@ -69,6 +69,8 @@ export function DayCard({ assignment }: DayCardProps) {
     const updatedAssignment = {
       eighteen: editedEighteen,
       sixteen: editedSixteen,
+      absents: assignment.absents || [],
+      missing: assignment.missing || 0,
       locked: true
     };
 
@@ -298,6 +300,40 @@ export function DayCard({ assignment }: DayCardProps) {
             ))}
           </div>
         </div>
+
+        {/* Absents */}
+        {assignment.absents && assignment.absents.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Badge variant="destructive">Congé</Badge>
+              <span className="text-sm font-medium">Absents (Congé)</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {assignment.absents.map((name, index) => (
+                <div key={`absent-${index}`} className="flex items-center gap-2 p-2 bg-destructive/10 rounded-lg">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-destructive text-destructive-foreground text-xs">
+                      {generateInitials(name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-medium">{name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Alerte sous-effectif */}
+        {assignment.missing && assignment.missing > 0 && (
+          <div className="p-3 bg-warning/10 border border-warning/20 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Badge variant="destructive">Alerte</Badge>
+              <span className="text-sm font-medium text-warning-foreground">
+                Sous-effectif : {assignment.missing} poste(s) non pourvu(s).
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Équipe 16h */}
         <div>
