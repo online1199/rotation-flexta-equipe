@@ -58,7 +58,12 @@ export const useScheduleStore = create<ScheduleStore>()(
 
       addTeamMember: async (name) => {
         const { teamMembers } = get();
-        if (teamMembers.length >= 5) return;
+        console.log('➕ Adding member:', name, 'Current count:', teamMembers.length);
+        
+        if (teamMembers.length >= 5) {
+          console.log('❌ Team is full, cannot add more members');
+          return;
+        }
         
         const newMember: TeamMember = {
           id: crypto.randomUUID(),
@@ -67,14 +72,30 @@ export const useScheduleStore = create<ScheduleStore>()(
           leaves: []
         };
         
-        // Sauvegarder dans Supabase
-        await supabase.from('members').insert([{
-          id: newMember.id,
-          name: newMember.name,
-          user_id: (await supabase.auth.getUser()).data.user?.id
-        }]);
+        console.log('💾 Saving to Supabase:', newMember);
+        
+        try {
+          // Sauvegarder dans Supabase
+          const { error } = await supabase.from('members').insert([{
+            id: newMember.id,
+            name: newMember.name,
+            user_id: (await supabase.auth.getUser()).data.user?.id
+          }]);
+          
+          if (error) {
+            console.error('❌ Error saving to Supabase:', error);
+            return;
+          }
+          
+          console.log('✅ Successfully saved to Supabase');
+        } catch (err) {
+          console.error('❌ Exception saving to Supabase:', err);
+          return;
+        }
         
         const updatedMembers = [...teamMembers, newMember];
+        console.log('📊 Updated members count:', updatedMembers.length);
+        
         set({ teamMembers: updatedMembers });
         saveScheduleState({ teamMembers: updatedMembers });
       },
@@ -145,7 +166,11 @@ export const useScheduleStore = create<ScheduleStore>()(
       generateSchedule: () => {
         const { teamMembers, plannerParams, lockedDays } = get();
         
+        console.log('🎯 Generate schedule - team members count:', teamMembers.length);
+        console.log('👥 Team members:', teamMembers);
+        
         if (teamMembers.length !== 5) {
+          console.error('❌ Cannot generate schedule: need exactly 5 members, got', teamMembers.length);
           throw new Error("Il faut exactement 5 personnes pour générer le planning.");
         }
 
@@ -254,15 +279,18 @@ export const useScheduleStore = create<ScheduleStore>()(
       // Supabase integration methods
       initializeFromSupabase: async () => {
         try {
+          console.log('🔄 Initializing from Supabase...');
           const { data: members, error } = await supabase
             .from('members')
             .select('*')
             .order('created_at', { ascending: true });
 
           if (error) {
-            console.error('Error loading members:', error);
+            console.error('❌ Error loading members:', error);
             return;
           }
+
+          console.log('📦 Raw members data from Supabase:', members);
 
           const teamMembers: TeamMember[] = members?.map(member => ({
             id: member.id,
@@ -271,10 +299,13 @@ export const useScheduleStore = create<ScheduleStore>()(
             leaves: []
           })) || [];
 
+          console.log('👥 Processed team members:', teamMembers);
+          console.log('📊 Team members count:', teamMembers.length);
+
           set({ teamMembers });
-          console.log('Loaded', teamMembers.length, 'members from Supabase');
+          console.log('✅ Successfully loaded', teamMembers.length, 'members from Supabase');
         } catch (error) {
-          console.error('Error initializing from Supabase:', error);
+          console.error('❌ Error initializing from Supabase:', error);
         }
       }
     }),
