@@ -14,7 +14,116 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      leaves: {
+        Row: {
+          created_at: string | null
+          end_date: string
+          id: string
+          member_id: string | null
+          start_date: string
+        }
+        Insert: {
+          created_at?: string | null
+          end_date: string
+          id?: string
+          member_id?: string | null
+          start_date: string
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          member_id?: string | null
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaves_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      locked_days: {
+        Row: {
+          absents: string[]
+          created_at: string | null
+          date_iso: string
+          eighteen: string[]
+          id: string
+          missing: number
+          sixteen: string[]
+          user_id: string | null
+        }
+        Insert: {
+          absents?: string[]
+          created_at?: string | null
+          date_iso: string
+          eighteen?: string[]
+          id?: string
+          missing?: number
+          sixteen?: string[]
+          user_id?: string | null
+        }
+        Update: {
+          absents?: string[]
+          created_at?: string | null
+          date_iso?: string
+          eighteen?: string[]
+          id?: string
+          missing?: number
+          sixteen?: string[]
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      members: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

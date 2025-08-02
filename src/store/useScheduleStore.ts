@@ -28,6 +28,9 @@ interface ScheduleStore extends ScheduleState {
   // État UI
   currentStep: number;
   setCurrentStep: (step: number) => void;
+  
+  // Supabase integration
+  initializeFromSupabase: () => Promise<void>;
 }
 
 const initialState: ScheduleState = {
@@ -230,7 +233,13 @@ export const useScheduleStore = create<ScheduleStore>()(
         // Note: clearAllData() sera appelé depuis le composant
       },
 
-      setCurrentStep: (step) => set({ currentStep: step })
+      setCurrentStep: (step) => set({ currentStep: step }),
+
+      // Supabase integration methods
+      initializeFromSupabase: async () => {
+        // Cette méthode sera appelée pour initialiser depuis Supabase
+        console.log('Initializing from Supabase...');
+      }
     }),
     { name: 'schedule-store' }
   )

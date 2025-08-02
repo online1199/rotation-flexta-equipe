@@ -15,7 +15,7 @@ export function TeamForm() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
 
-  const handleAddMember = () => {
+  const handleAddMember = async () => {
     if (!newMemberName.trim()) {
       toast({
         title: "Erreur",
@@ -43,7 +43,7 @@ export function TeamForm() {
       return;
     }
 
-    addTeamMember(newMemberName);
+    await addTeamMember(newMemberName);
     setNewMemberName('');
     toast({
       title: "Membre ajouté",
@@ -51,8 +51,8 @@ export function TeamForm() {
     });
   };
 
-  const handleRemoveMember = (id: string, name: string) => {
-    removeTeamMember(id);
+  const handleRemoveMember = async (id: string, name: string) => {
+    await removeTeamMember(id);
     toast({
       title: "Membre retiré",
       description: `${name} a été retiré de l'équipe.`
@@ -69,7 +69,7 @@ export function TeamForm() {
     setEditingName('');
   };
 
-  const saveEditing = () => {
+  const saveEditing = async () => {
     if (!editingName.trim()) {
       toast({
         title: "Erreur",
@@ -80,7 +80,7 @@ export function TeamForm() {
     }
 
     if (editingId) {
-      updateTeamMember(editingId, editingName);
+      await updateTeamMember(editingId, editingName);
       setEditingId(null);
       setEditingName('');
       toast({
