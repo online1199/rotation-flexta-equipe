@@ -2,12 +2,15 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { RotateCcw, Users, Calendar, Clock } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RotateCcw, Users, Calendar, Clock, List, CalendarDays } from 'lucide-react';
 import { StepIndicator } from '@/components/StepIndicator';
 import { TeamForm } from '@/components/TeamForm';
 import { PlannerParams } from '@/components/PlannerParams';
 import { ScheduleList } from '@/components/ScheduleList';
+import { CalendarView } from '@/components/CalendarView';
 import { Toolbar } from '@/components/Toolbar';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useScheduleStore } from '@/store/useScheduleStore';
 
 const Index = () => {
@@ -25,7 +28,26 @@ const Index = () => {
       case 2:
         return <PlannerParams />;
       case 3:
-        return <ScheduleList />;
+        return (
+          <Tabs defaultValue="list" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="list" className="flex items-center gap-2">
+                <List className="h-4 w-4" />
+                Vue liste
+              </TabsTrigger>
+              <TabsTrigger value="calendar" className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4" />
+                Vue calendrier
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="list">
+              <ScheduleList />
+            </TabsContent>
+            <TabsContent value="calendar">
+              <CalendarView />
+            </TabsContent>
+          </Tabs>
+        );
       default:
         return <TeamForm />;
     }
@@ -83,6 +105,7 @@ const Index = () => {
             </div>
             
             <div className="flex items-center gap-4">
+              <ThemeToggle />
               <Toolbar />
             </div>
           </div>
