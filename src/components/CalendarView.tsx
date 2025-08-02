@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, getDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,29 +8,22 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-reac
 import { useScheduleStore } from '@/store/useScheduleStore';
 import { generateInitials } from '@/lib/rotation';
 
-// Couleurs prédéfinies pour chaque membre de l'équipe
-const MEMBER_COLORS = [
-  'hsl(210, 100%, 56%)',   // Bleu
-  'hsl(142, 71%, 45%)',    // Vert
-  'hsl(262, 83%, 58%)',    // Violet
-  'hsl(346, 77%, 49%)',    // Rose
-  'hsl(32, 95%, 44%)',     // Orange
-];
+// Couleurs simplifiées par créneau
+const SHIFT_COLORS = {
+  '18h': 'hsl(32, 95%, 44%)',   // Orange pour 18h
+  '16h': 'hsl(142, 71%, 45%)',  // Vert pour 16h
+};
 
 export function CalendarView() {
-  const { assignments, teamMembers } = useScheduleStore();
+  const { assignments } = useScheduleStore();
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  // Créer un mapping des couleurs pour chaque membre
-  const memberColors = teamMembers.reduce((acc, member, index) => {
-    acc[member.name] = MEMBER_COLORS[index % MEMBER_COLORS.length];
-    return acc;
-  }, {} as Record<string, string>);
-
-  // Obtenir les jours du mois
+  // Obtenir les jours à afficher (incluant début/fin de semaine pour compléter la grille)
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
-  const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Lundi = début semaine
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
   // Créer une carte des affectations par date
   const assignmentsByDate = assignments.reduce((acc, assignment) => {
@@ -60,20 +53,18 @@ export function CalendarView() {
   };
 
   const MemberBadge = ({ name, shift }: { name: string; shift: '18h' | '16h' }) => {
-    const color = memberColors[name];
+    const color = SHIFT_COLORS[shift];
     const initials = generateInitials(name);
     
     return (
       <div
-        className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium"
+        className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-white"
         style={{
-          backgroundColor: color + '20', // 20% opacity
-          borderLeft: `3px solid ${color}`,
-          color: color
+          backgroundColor: color,
         }}
       >
         <span className="font-semibold">{initials}</span>
-        <span className="text-[10px] opacity-75">{shift}</span>
+        <span className="text-[10px] opacity-90">{shift}</span>
       </div>
     );
   };
@@ -98,22 +89,27 @@ export function CalendarView() {
 
   return (
     <div className="space-y-6">
-      {/* Légende des couleurs */}
+      {/* Légende des créneaux */}
       <Card>
         <CardHeader>
-          <CardTitle>Légende des membres</CardTitle>
+          <CardTitle>Légende des créneaux</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-3">
-            {teamMembers.map((member) => (
-              <div key={member.id} className="flex items-center gap-2">
-                <div
-                  className="w-4 h-4 rounded-full"
-                  style={{ backgroundColor: memberColors[member.name] }}
-                />
-                <span className="text-sm font-medium">{member.name}</span>
-              </div>
-            ))}
+          <div className="flex gap-6">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-4 h-4 rounded-full"
+                style={{ backgroundColor: SHIFT_COLORS['18h'] }}
+              />
+              <span className="text-sm font-medium">Service jusqu'à 18h</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div
+                className="w-4 h-4 rounded-full"
+                style={{ backgroundColor: SHIFT_COLORS['16h'] }}
+              />
+              <span className="text-sm font-medium">Sortie à 16h</span>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -155,18 +151,21 @@ export function CalendarView() {
 
           {/* Grille du calendrier */}
           <div className="grid grid-cols-7 gap-2">
-            {monthDays.map((date) => {
+            {calendarDays.map((date) => {
               const assignment = getDayAssignment(date);
               const isCurrentMonth = isSameMonth(date, currentMonth);
               const isCurrentDay = isToday(date);
+              const dayOfWeek = getDay(date); // 0 = dimanche, 6 = samedi
+              const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
               return (
                 <div
                   key={date.toISOString()}
                   className={`
                     min-h-[120px] p-2 border rounded-lg transition-colors
-                    ${isCurrentMonth ? 'bg-background' : 'bg-muted/50'}
+                    ${isCurrentMonth ? 'bg-background' : 'bg-muted/30'}
                     ${isCurrentDay ? 'ring-2 ring-primary' : ''}
+                    ${isWeekend && isCurrentMonth ? 'bg-muted/50' : ''}
                     ${assignment ? 'border-primary/30' : 'border-border'}
                   `}
                 >
@@ -177,6 +176,7 @@ export function CalendarView() {
                         text-sm font-medium
                         ${isCurrentDay ? 'text-primary font-bold' : ''}
                         ${!isCurrentMonth ? 'text-muted-foreground' : ''}
+                        ${isWeekend && isCurrentMonth ? 'text-muted-foreground font-semibold' : ''}
                       `}
                     >
                       {format(date, 'd')}
