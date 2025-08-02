@@ -1,30 +1,49 @@
 import { format } from 'date-fns';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 import { createEvent, EventAttributes } from 'ics';
+import { unparse } from 'papaparse';
 import type { Assignment, TeamMember } from './types';
 
 const TIMEZONE = 'Europe/Paris';
 
 /**
- * Exporte le planning au format CSV
+ * Exporte le planning au format CSV avec PapaParse
  */
 export function exportToCSV(assignments: Assignment[]): string {
-  const headers = ['date', '18h_1', '18h_2', '18h_3', '16h_1', '16h_2'];
-  const rows = [headers.join(',')];
-
-  assignments.forEach(assignment => {
+  const data = assignments.map(assignment => {
     const date = formatInTimeZone(new Date(assignment.dateISO), TIMEZONE, 'dd/MM/yyyy');
+    const dayName = formatInTimeZone(new Date(assignment.dateISO), TIMEZONE, 'EEEE');
+    
+    // Préparer les colonnes pour les créneaux 18h (max 3 personnes)
     const eighteen = assignment.eighteen.concat(['', '', '']).slice(0, 3);
+    
+    // Préparer les colonnes pour les créneaux 16h (max 2 personnes)
     const sixteen = assignment.sixteen.concat(['', '']).slice(0, 2);
     
-    const row = [date, ...eighteen, ...sixteen]
-      .map(cell => `"${cell.replace(/"/g, '""')}"`)
-      .join(',');
+    // Informations sur les absents et les postes manquants
+    const absentsList = assignment.absents.join(', ') || '-';
+    const missingCount = assignment.missing > 0 ? assignment.missing.toString() : '-';
     
-    rows.push(row);
+    return {
+      'Date': date,
+      'Jour': dayName,
+      'Service 18h - Personne 1': eighteen[0],
+      'Service 18h - Personne 2': eighteen[1],
+      'Service 18h - Personne 3': eighteen[2],
+      'Sortie 16h - Personne 1': sixteen[0],
+      'Sortie 16h - Personne 2': sixteen[1],
+      'Absents': absentsList,
+      'Postes manquants': missingCount
+    };
   });
 
-  return rows.join('\n');
+  return unparse(data, {
+    header: true,
+    delimiter: ',',
+    quotes: true,
+    quoteChar: '"',
+    escapeChar: '"'
+  });
 }
 
 /**
