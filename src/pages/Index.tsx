@@ -133,7 +133,7 @@ const Index = () => {
           </div>
 
           {/* Contenu de l'étape actuelle */}
-          <div className="space-y-6">
+          <div className="space-y-6 animate-fade-in">
             {renderStepContent()}
           </div>
 

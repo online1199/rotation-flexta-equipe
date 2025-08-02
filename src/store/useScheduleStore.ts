@@ -151,7 +151,12 @@ export const useScheduleStore = create<ScheduleStore>()(
 
       loadFromStorage: () => {
         const stored = loadScheduleState();
-        set(state => ({ ...state, ...stored }));
+        set(state => ({ 
+          ...state, 
+          ...stored,
+          // S'assurer que plannerParams a toujours une valeur par défaut
+          plannerParams: stored.plannerParams || initialState.plannerParams
+        }));
       },
 
       clearAll: () => {

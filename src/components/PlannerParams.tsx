@@ -16,7 +16,11 @@ import { cn } from '@/lib/utils';
 export function PlannerParams() {
   const { 
     teamMembers, 
-    plannerParams, 
+    plannerParams = {
+      startDate: new Date(),
+      numberOfDays: 10,
+      skipWeekends: true
+    }, 
     setPlannerParams, 
     generateSchedule: generateScheduleAction,
     setCurrentStep 

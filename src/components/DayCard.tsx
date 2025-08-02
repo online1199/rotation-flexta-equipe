@@ -119,7 +119,7 @@ export function DayCard({ assignment }: DayCardProps) {
   };
 
   return (
-    <Card className={`relative ${isLocked ? 'ring-2 ring-warning/50' : ''}`}>
+    <Card className={`relative hover-lift ${isLocked ? 'ring-2 ring-warning/50' : ''}`}>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
