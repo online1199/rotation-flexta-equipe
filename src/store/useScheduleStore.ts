@@ -3,6 +3,7 @@ import { devtools } from 'zustand/middleware';
 import type { TeamMember, Assignment, PlannerParams, ScheduleState, LeaveRange } from '@/lib/types';
 import { generateSchedule, generateScheduleWithLeaves, generateInitials } from '@/lib/rotation';
 import { saveScheduleState, loadScheduleState } from '@/lib/storage';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ScheduleStore extends ScheduleState {
   // Actions
@@ -55,7 +56,7 @@ export const useScheduleStore = create<ScheduleStore>()(
         saveScheduleState({ teamMembers: members });
       },
 
-      addTeamMember: (name) => {
+      addTeamMember: async (name) => {
         const { teamMembers } = get();
         if (teamMembers.length >= 5) return;
         
@@ -66,20 +67,35 @@ export const useScheduleStore = create<ScheduleStore>()(
           leaves: []
         };
         
+        // Sauvegarder dans Supabase
+        await supabase.from('members').insert([{
+          id: newMember.id,
+          name: newMember.name,
+          user_id: (await supabase.auth.getUser()).data.user?.id
+        }]);
+        
         const updatedMembers = [...teamMembers, newMember];
         set({ teamMembers: updatedMembers });
         saveScheduleState({ teamMembers: updatedMembers });
       },
 
-      removeTeamMember: (id) => {
+      removeTeamMember: async (id) => {
         const { teamMembers } = get();
+        
+        // Supprimer de Supabase
+        await supabase.from('members').delete().eq('id', id);
+        
         const updatedMembers = teamMembers.filter(member => member.id !== id);
         set({ teamMembers: updatedMembers });
         saveScheduleState({ teamMembers: updatedMembers });
       },
 
-      updateTeamMember: (id, name) => {
+      updateTeamMember: async (id, name) => {
         const { teamMembers } = get();
+        
+        // Mettre à jour dans Supabase
+        await supabase.from('members').update({ name: name.trim() }).eq('id', id);
+        
         const updatedMembers = teamMembers.map(member =>
           member.id === id
             ? { ...member, name: name.trim(), initials: generateInitials(name.trim()) }
@@ -237,8 +253,29 @@ export const useScheduleStore = create<ScheduleStore>()(
 
       // Supabase integration methods
       initializeFromSupabase: async () => {
-        // Cette méthode sera appelée pour initialiser depuis Supabase
-        console.log('Initializing from Supabase...');
+        try {
+          const { data: members, error } = await supabase
+            .from('members')
+            .select('*')
+            .order('created_at', { ascending: true });
+
+          if (error) {
+            console.error('Error loading members:', error);
+            return;
+          }
+
+          const teamMembers: TeamMember[] = members?.map(member => ({
+            id: member.id,
+            name: member.name,
+            initials: generateInitials(member.name),
+            leaves: []
+          })) || [];
+
+          set({ teamMembers });
+          console.log('Loaded', teamMembers.length, 'members from Supabase');
+        } catch (error) {
+          console.error('Error initializing from Supabase:', error);
+        }
       }
     }),
     { name: 'schedule-store' }

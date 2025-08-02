@@ -23,7 +23,7 @@ const Index = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const { profile, loading: profileLoading, isAdmin } = useProfile();
   const navigate = useNavigate();
-  const { currentStep, setCurrentStep, teamMembers, assignments, lockedDays } = useScheduleStore();
+  const { currentStep, setCurrentStep, teamMembers, assignments, lockedDays, initializeFromSupabase } = useScheduleStore();
   const [view, setView] = useState<'list' | 'calendar'>('list');
 
   useEffect(() => {
@@ -31,6 +31,13 @@ const Index = () => {
       navigate('/auth');
     }
   }, [authLoading, profileLoading, user, navigate]);
+
+  // Charger les données depuis Supabase quand l'utilisateur est connecté
+  useEffect(() => {
+    if (user && !authLoading && !profileLoading) {
+      initializeFromSupabase();
+    }
+  }, [user, authLoading, profileLoading, initializeFromSupabase]);
 
   if (authLoading || profileLoading) {
     return (
