@@ -8,13 +8,14 @@ import { ScheduleList } from "@/components/ScheduleList";
 import { TeamForm } from "@/components/TeamForm";
 import { AdminPlanner } from "@/components/AdminPlanner";
 import { UserView } from "@/components/UserView";
+import { RotationHistory } from "@/components/RotationHistory";
 import { Toolbar } from "@/components/Toolbar";
 import { StepIndicator } from "@/components/StepIndicator";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LogOut, Loader2, Users, Calendar, Clock, List, CalendarDays, RotateCcw, Lock } from "lucide-react";
+import { LogOut, Loader2, Users, Calendar, Clock, List, CalendarDays, RotateCcw, Lock, History } from "lucide-react";
 import { useScheduleStore } from '@/store/useScheduleStore';
 import { Separator } from '@/components/ui/separator';
 
@@ -54,7 +55,7 @@ const Index = () => {
         case 3:
           return (
             <Tabs defaultValue="list" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="list" className="flex items-center gap-2">
                   <List className="h-4 w-4" />
                   Vue liste
@@ -63,12 +64,19 @@ const Index = () => {
                   <CalendarDays className="h-4 w-4" />
                   Vue calendrier
                 </TabsTrigger>
+                <TabsTrigger value="history" className="flex items-center gap-2">
+                  <History className="h-4 w-4" />
+                  Historique
+                </TabsTrigger>
               </TabsList>
               <TabsContent value="list">
                 <ScheduleList />
               </TabsContent>
               <TabsContent value="calendar">
                 <CalendarView />
+              </TabsContent>
+              <TabsContent value="history">
+                <RotationHistory />
               </TabsContent>
             </Tabs>
           );

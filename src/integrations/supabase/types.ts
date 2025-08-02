@@ -138,6 +138,7 @@ export type Database = {
           generated_at: string | null
           generated_by: string | null
           id: string
+          locked: boolean | null
           missing: number | null
           sixteen: string[] | null
         }
@@ -148,6 +149,7 @@ export type Database = {
           generated_at?: string | null
           generated_by?: string | null
           id?: string
+          locked?: boolean | null
           missing?: number | null
           sixteen?: string[] | null
         }
@@ -158,6 +160,7 @@ export type Database = {
           generated_at?: string | null
           generated_by?: string | null
           id?: string
+          locked?: boolean | null
           missing?: number | null
           sixteen?: string[] | null
         }

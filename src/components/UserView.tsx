@@ -5,7 +5,9 @@ import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarIcon, Plus, Trash2, Eye } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Calendar as CalendarIcon, Plus, Trash2, Eye, History } from 'lucide-react';
+import { RotationHistory } from '@/components/RotationHistory';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -162,56 +164,72 @@ export function UserView() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Planning en lecture seule */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Eye className="h-5 w-5" />
-            Planning de rotation
-          </CardTitle>
-          <CardDescription>
-            Consultez le planning généré par l'administrateur ({rotations.length} jours planifiés)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {rotations.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              Aucun planning disponible. L'administrateur doit d'abord générer un planning.
-            </p>
-          ) : (
-            <div className="max-h-96 overflow-y-auto space-y-2">
-              {rotations.map((rotation) => (
-                <div key={rotation.id} className="p-3 border rounded-lg">
-                  <div className="font-medium">
-                    {format(new Date(rotation.date), "EEEE d MMMM yyyy", { locale: fr })}
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    <span className="font-medium">18h:</span> {rotation.eighteen.join(", ") || "Aucun"}
-                    {" | "}
-                    <span className="font-medium">16h:</span> {rotation.sixteen.join(", ") || "Aucun"}
-                    {rotation.absents.length > 0 && (
-                      <>
-                        {" | "}
-                        <span className="text-orange-600 font-medium">Absents:</span> {rotation.absents.join(", ")}
-                      </>
-                    )}
-                    {rotation.missing > 0 && (
-                      <>
-                        {" | "}
-                        <span className="text-red-600 font-medium">Postes manquants:</span> {rotation.missing}
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+    <Tabs defaultValue="planning" className="w-full">
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="planning" className="flex items-center gap-2">
+          <Eye className="h-4 w-4" />
+          Planning
+        </TabsTrigger>
+        <TabsTrigger value="leaves" className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Mes congés
+        </TabsTrigger>
+        <TabsTrigger value="history" className="flex items-center gap-2">
+          <History className="h-4 w-4" />
+          Historique
+        </TabsTrigger>
+      </TabsList>
 
-      {/* Gestion des congés */}
-      <Card>
+      <TabsContent value="planning">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Planning de rotation
+            </CardTitle>
+            <CardDescription>
+              Consultez le planning généré par l'administrateur ({rotations.length} jours planifiés)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {rotations.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">
+                Aucun planning disponible. L'administrateur doit d'abord générer un planning.
+              </p>
+            ) : (
+              <div className="max-h-96 overflow-y-auto space-y-2">
+                {rotations.map((rotation) => (
+                  <div key={rotation.id} className="p-3 border rounded-lg">
+                    <div className="font-medium">
+                      {format(new Date(rotation.date), "EEEE d MMMM yyyy", { locale: fr })}
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      <span className="font-medium">18h:</span> {rotation.eighteen.join(", ") || "Aucun"}
+                      {" | "}
+                      <span className="font-medium">16h:</span> {rotation.sixteen.join(", ") || "Aucun"}
+                      {rotation.absents.length > 0 && (
+                        <>
+                          {" | "}
+                          <span className="text-orange-600 font-medium">Absents:</span> {rotation.absents.join(", ")}
+                        </>
+                      )}
+                      {rotation.missing > 0 && (
+                        <>
+                          {" | "}
+                          <span className="text-red-600 font-medium">Postes manquants:</span> {rotation.missing}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="leaves">
+        <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5" />
@@ -329,6 +347,11 @@ export function UserView() {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </TabsContent>
+
+      <TabsContent value="history">
+        <RotationHistory />
+      </TabsContent>
+    </Tabs>
   );
 }
