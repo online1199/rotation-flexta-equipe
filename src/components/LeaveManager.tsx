@@ -63,6 +63,20 @@ export function LeaveManager({ memberId, memberName, leaves, onAddLeave, onRemov
     });
   };
 
+  const handleClearAllLeaves = () => {
+    if (leaves.length === 0) return;
+    
+    // Supprimer tous les congés en appelant onRemoveLeave pour chaque index depuis la fin
+    for (let i = leaves.length - 1; i >= 0; i--) {
+      onRemoveLeave(i);
+    }
+    
+    toast({
+      title: "Tous les congés supprimés",
+      description: `Toutes les périodes de congé de ${memberName} ont été supprimées.`
+    });
+  };
+
   return (
     <Card className="mt-3">
       <CardHeader className="pb-3">
@@ -134,6 +148,16 @@ export function LeaveManager({ memberId, memberName, leaves, onAddLeave, onRemov
                 </Button>
               </div>
             ))}
+            {/* Bouton pour supprimer tous les congés */}
+            <Button
+              onClick={handleClearAllLeaves}
+              size="sm"
+              variant="destructive"
+              className="w-full mt-2"
+            >
+              <Trash2 className="h-3 w-3 mr-1" />
+              Supprimer tous les congés
+            </Button>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground text-center py-2">
