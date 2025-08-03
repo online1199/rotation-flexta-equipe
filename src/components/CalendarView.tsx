@@ -54,6 +54,7 @@ export function CalendarView() {
 
   const MemberBadge = ({ name, shift }: { name: string; shift: '18h' | '16h' }) => {
     const color = SHIFT_COLORS[shift];
+    const capitalizedName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
     
     return (
       <div
@@ -62,7 +63,7 @@ export function CalendarView() {
           backgroundColor: color,
         }}
       >
-        <span className="font-semibold">{name}</span>
+        <span className="font-semibold">{capitalizedName}</span>
         <span className="text-[10px] opacity-90">{shift}</span>
       </div>
     );
