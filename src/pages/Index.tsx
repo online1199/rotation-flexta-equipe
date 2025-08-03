@@ -10,6 +10,7 @@ import { AdminPlanner } from "@/components/AdminPlanner";
 import { UserView } from "@/components/UserView";
 import { RotationHistory } from "@/components/RotationHistory";
 import { Toolbar } from "@/components/Toolbar";
+import { ExportToolbar } from "@/components/ExportToolbar";
 import { StepIndicator } from "@/components/StepIndicator";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -94,10 +95,16 @@ const Index = () => {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="list">
-                <ScheduleList />
+                <div className="space-y-4">
+                  <ScheduleList />
+                  {assignments.length > 0 && <ExportToolbar />}
+                </div>
               </TabsContent>
               <TabsContent value="calendar">
-                <CalendarView />
+                <div className="space-y-4">
+                  <CalendarView />
+                  {assignments.length > 0 && <ExportToolbar />}
+                </div>
               </TabsContent>
             </Tabs>
           );
@@ -168,7 +175,15 @@ const Index = () => {
                   Déconnexion
                 </Button>
                 <ThemeToggle />
-                {isAdmin && <Toolbar onShowHistory={() => setShowHistory(true)} />}
+                {isAdmin && (
+                  <Toolbar 
+                    onShowHistory={() => setShowHistory(true)} 
+                    onGoHome={() => {
+                      setShowHistory(false);
+                      setCurrentStep(1);
+                    }}
+                  />
+                )}
               </div>
             </div>
             

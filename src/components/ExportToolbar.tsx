@@ -3,20 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Download, Upload, FileText, Calendar as CalendarIcon, Trash2, History, Home } from 'lucide-react';
+import { Download, Upload, FileText, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
 import { useScheduleStore } from '@/store/useScheduleStore';
 import { exportToCSV, exportToICS, exportToJSON, importFromJSON, downloadFile } from '@/lib/export';
 import { clearAllData } from '@/lib/storage';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
-interface ToolbarProps {
-  onShowHistory?: () => void;
-  onGoHome?: () => void;
-  showExports?: boolean;
-}
-
-export function Toolbar({ onShowHistory, onGoHome, showExports = false }: ToolbarProps) {
+export function ExportToolbar() {
   const { 
     teamMembers, 
     assignments, 
@@ -172,37 +166,10 @@ export function Toolbar({ onShowHistory, onGoHome, showExports = false }: Toolba
   const hasData = teamMembers.length > 0 || assignments.length > 0;
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      {/* Accueil */}
-      {onGoHome && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onGoHome}
-          className="gap-2"
-        >
-          <Home className="h-4 w-4" />
-          Accueil
-        </Button>
-      )}
-
-      {/* Historique */}
-      {onShowHistory && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onShowHistory}
-          className="gap-2"
-        >
-          <History className="h-4 w-4" />
-          Historique
-        </Button>
-      )}
-
-      {/* Exports - seulement si showExports est true */}
-      {showExports && (
-        <>
-          {/* Export CSV */}
+    <div className="flex items-center gap-2 flex-wrap justify-center p-4 border rounded-lg bg-muted/50">
+      <h3 className="text-sm font-medium mr-4">Actions sur le planning :</h3>
+      
+      {/* Export CSV */}
       <Button
         variant="outline"
         size="sm"
@@ -309,8 +276,6 @@ export function Toolbar({ onShowHistory, onGoHome, showExports = false }: Toolba
             </div>
           </DialogContent>
         </Dialog>
-      )}
-        </>
       )}
     </div>
   );
