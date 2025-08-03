@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
+import { useScheduleStore } from '@/store/useScheduleStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Lock, Unlock, Trash2, Calendar, Users, Clock, UserX, AlertTriangle } from 'lucide-react';
-import { format } from 'date-fns';
+import { Lock, Unlock, Trash2, Calendar, Users, Clock, UserX, AlertTriangle, Eye, ArrowRight } from 'lucide-react';
+import { format, parseISO, isSameWeek, startOfWeek, endOfWeek } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 interface RotationDay {
@@ -22,10 +23,19 @@ interface RotationDay {
   generated_at: string;
 }
 
+interface PlanningGroup {
+  id: string;
+  startDate: Date;
+  endDate: Date;
+  rotations: RotationDay[];
+  generated_at: string;
+}
+
 export function RotationHistory() {
   const { isAdmin } = useProfile();
   const { toast } = useToast();
-  const [history, setHistory] = useState<RotationDay[]>([]);
+  const { setCurrentStep } = useScheduleStore();
+  const [planningGroups, setPlanningGroups] = useState<PlanningGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadHistory = async () => {
@@ -33,7 +43,7 @@ export function RotationHistory() {
       const { data, error } = await supabase
         .from('rotations')
         .select('*')
-        .order('date', { ascending: false });
+        .order('date', { ascending: true });
 
       if (error) {
         console.error('Erreur lors du chargement de l\'historique:', error);
@@ -43,7 +53,9 @@ export function RotationHistory() {
           variant: "destructive"
         });
       } else {
-        setHistory(data || []);
+        // Grouper les rotations par période de génération
+        const groups = groupRotationsByGeneration(data || []);
+        setPlanningGroups(groups);
       }
     } catch (error) {
       console.error('Erreur lors du chargement de l\'historique:', error);
@@ -57,75 +69,58 @@ export function RotationHistory() {
     }
   };
 
-  const toggleLock = async (id: string, currentLocked: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('rotations')
-        .update({ locked: !currentLocked })
-        .eq('id', id);
-
-      if (error) {
-        console.error('Erreur lors du verrouillage:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de modifier le verrouillage",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Succès",
-          description: currentLocked ? "Journée déverrouillée" : "Journée verrouillée"
-        });
-        loadHistory();
+  const groupRotationsByGeneration = (rotations: RotationDay[]): PlanningGroup[] => {
+    const groups: { [key: string]: RotationDay[] } = {};
+    
+    // Grouper par date de génération (en ignorant l'heure)
+    rotations.forEach(rotation => {
+      const generatedDate = rotation.generated_at ? 
+        format(parseISO(rotation.generated_at), 'yyyy-MM-dd') : 
+        'unknown';
+      
+      if (!groups[generatedDate]) {
+        groups[generatedDate] = [];
       }
-    } catch (error) {
-      console.error('Erreur lors du verrouillage:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de modifier le verrouillage",
-        variant: "destructive"
-      });
-    }
+      groups[generatedDate].push(rotation);
+    });
+
+    // Transformer en PlanningGroup et trier
+    return Object.entries(groups)
+      .map(([genDate, rots]) => {
+        const sortedRotations = rots.sort((a, b) => 
+          new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+        
+        return {
+          id: genDate,
+          startDate: new Date(sortedRotations[0].date),
+          endDate: new Date(sortedRotations[sortedRotations.length - 1].date),
+          rotations: sortedRotations,
+          generated_at: sortedRotations[0].generated_at
+        };
+      })
+      .sort((a, b) => new Date(b.generated_at).getTime() - new Date(a.generated_at).getTime());
   };
 
-  const deleteRotation = async (id: string, locked: boolean) => {
-    if (locked) {
-      toast({
-        title: "Impossible",
-        description: "Impossible de supprimer une journée verrouillée",
-        variant: "destructive"
-      });
-      return;
-    }
+  const loadPlanningGroup = async (group: PlanningGroup) => {
+    // Charger ce planning dans le store
+    const assignments = group.rotations.map(rotation => ({
+      dateISO: rotation.date,
+      eighteen: rotation.eighteen,
+      sixteen: rotation.sixteen,
+      absents: rotation.absents,
+      missing: rotation.missing
+    }));
 
-    try {
-      const { error } = await supabase
-        .from('rotations')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error('Erreur lors de la suppression:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de supprimer la rotation",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Succès",
-          description: "Rotation supprimée"
-        });
-        loadHistory();
-      }
-    } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de supprimer la rotation",
-        variant: "destructive"
-      });
-    }
+    useScheduleStore.setState({ assignments });
+    
+    // Passer à la vue liste
+    setCurrentStep(2);
+    
+    toast({
+      title: "Planning chargé",
+      description: `Planning du ${format(group.startDate, 'dd/MM/yyyy', { locale: fr })} au ${format(group.endDate, 'dd/MM/yyyy', { locale: fr })} chargé avec succès.`
+    });
   };
 
   useEffect(() => {
@@ -143,143 +138,80 @@ export function RotationHistory() {
     );
   }
 
-  if (history.length === 0) {
+  if (planningGroups.length === 0) {
     return (
       <Alert>
         <Calendar className="h-4 w-4" />
         <AlertDescription>
-          Aucune rotation enregistrée pour le moment.
+          Aucun planning enregistré pour le moment.
         </AlertDescription>
       </Alert>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Historique des rotations</h2>
+        <h2 className="text-2xl font-bold">Historique des plannings</h2>
         <Badge variant="outline" className="text-sm">
-          {history.length} journée{history.length > 1 ? 's' : ''} enregistrée{history.length > 1 ? 's' : ''}
+          {planningGroups.length} planning{planningGroups.length > 1 ? 's' : ''} généré{planningGroups.length > 1 ? 's' : ''}
         </Badge>
       </div>
 
-      <div className="grid gap-4">
-        {history.map((rotation) => {
-          const date = new Date(rotation.date);
-          const dayName = format(date, 'EEEE', { locale: fr });
-          const formattedDate = format(date, 'dd MMMM yyyy', { locale: fr });
-
+      <div className="grid gap-6">
+        {planningGroups.map((group) => {
+          const totalDays = group.rotations.length;
+          const lockedDays = group.rotations.filter(r => r.locked).length;
+          
           return (
-            <Card key={rotation.id} className={rotation.locked ? 'border-amber-200 bg-amber-50/50' : ''}>
-              <CardHeader className="pb-3">
+            <Card key={group.id} className="border-2">
+              <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    <span className="capitalize">{dayName} {formattedDate}</span>
-                  </CardTitle>
-                  <div className="flex items-center gap-2">
-                    {rotation.locked && (
-                      <Badge variant="secondary" className="flex items-center gap-1">
-                        <Lock className="h-3 w-3" />
-                        Verrouillé
-                      </Badge>
-                    )}
-                    {isAdmin && (
-                      <div className="flex gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleLock(rotation.id, rotation.locked)}
-                          className="h-8 px-2"
-                        >
-                          {rotation.locked ? (
-                            <Unlock className="h-3 w-3" />
-                          ) : (
-                            <Lock className="h-3 w-3" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => deleteRotation(rotation.id, rotation.locked)}
-                          disabled={rotation.locked}
-                          className="h-8 px-2 text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    )}
+                  <div className="space-y-1">
+                    <CardTitle className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5" />
+                      Planning du {format(group.startDate, 'dd/MM/yyyy', { locale: fr })} au {format(group.endDate, 'dd/MM/yyyy', { locale: fr })}
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Généré le {format(parseISO(group.generated_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex gap-2">
+                      <Badge variant="outline">{totalDays} jours</Badge>
+                      {lockedDays > 0 && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          <Lock className="h-3 w-3" />
+                          {lockedDays} verrouillé{lockedDays > 1 ? 's' : ''}
+                        </Badge>
+                      )}
+                    </div>
+                    <Button 
+                      onClick={() => loadPlanningGroup(group)}
+                      className="flex items-center gap-2"
+                    >
+                      <Eye className="h-4 w-4" />
+                      Voir le planning
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Service 18h */}
-                <div className="flex items-start gap-3">
-                  <div className="flex items-center gap-2 min-w-[120px]">
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-primary" />
-                    <span className="font-medium">Service 18h</span>
+                    <span>Services 18h planifiés</span>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {rotation.eighteen.length > 0 ? (
-                      rotation.eighteen.map((person, index) => (
-                        <Badge key={index} variant="default" className="text-sm">
-                          {person}
-                        </Badge>
-                      ))
-                    ) : (
-                      <span className="text-muted-foreground italic">Aucune personne assignée</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Sortie 16h */}
-                <div className="flex items-start gap-3">
-                  <div className="flex items-center gap-2 min-w-[120px]">
+                  <div className="flex items-center gap-2">
                     <Users className="h-4 w-4 text-secondary" />
-                    <span className="font-medium">Sortie 16h</span>
+                    <span>Sorties 16h planifiées</span>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {rotation.sixteen.length > 0 ? (
-                      rotation.sixteen.map((person, index) => (
-                        <Badge key={index} variant="secondary" className="text-sm">
-                          {person}
-                        </Badge>
-                      ))
-                    ) : (
-                      <span className="text-muted-foreground italic">Aucune personne assignée</span>
-                    )}
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    <span>{totalDays} jours de planning</span>
                   </div>
                 </div>
-
-                {/* Absents */}
-                {rotation.absents.length > 0 && (
-                  <div className="flex items-start gap-3">
-                    <div className="flex items-center gap-2 min-w-[120px]">
-                      <UserX className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Absents</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {rotation.absents.map((person, index) => (
-                        <Badge key={index} variant="outline" className="text-sm text-muted-foreground">
-                          {person}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Postes manquants */}
-                {rotation.missing > 0 && (
-                  <div className="flex items-start gap-3">
-                    <div className="flex items-center gap-2 min-w-[120px]">
-                      <AlertTriangle className="h-4 w-4 text-destructive" />
-                      <span className="font-medium">Manquants</span>
-                    </div>
-                    <Badge variant="destructive" className="text-sm">
-                      {rotation.missing} poste{rotation.missing > 1 ? 's' : ''} manquant{rotation.missing > 1 ? 's' : ''}
-                    </Badge>
-                  </div>
-                )}
               </CardContent>
             </Card>
           );
