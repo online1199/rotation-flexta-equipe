@@ -10,16 +10,25 @@ const TIMEZONE = 'Europe/Paris';
  * Formate les données pour l'export CSV selon le format spécifié
  */
 function formatForCSV(assignments: Assignment[]) {
-  return assignments.map((assignment) => ({
-    Date: formatInTimeZone(new Date(assignment.dateISO), TIMEZONE, 'dd/MM/yyyy'),
-    "18h - 1": assignment.eighteen[0] || "",
-    "18h - 2": assignment.eighteen[1] || "",
-    "18h - 3": assignment.eighteen[2] || "",
-    "16h - 1": assignment.sixteen[0] || "",
-    "16h - 2": assignment.sixteen[1] || "",
-    Absents: assignment.absents?.join("; ") || "",
-    Manquants: assignment.missing ?? 0,
-  }));
+  return assignments.map((assignment) => {
+    const date = new Date(assignment.dateISO);
+    
+    return {
+      Date: formatInTimeZone(date, TIMEZONE, 'dd/MM/yyyy'),
+      Jour: formatInTimeZone(date, TIMEZONE, 'EEEE'),
+      "Service 18h - Personne 1": assignment.eighteen[0] || "",
+      "Service 18h - Personne 2": assignment.eighteen[1] || "",
+      "Service 18h - Personne 3": assignment.eighteen[2] || "",
+      "Sortie 16h - Personne 1": assignment.sixteen[0] || "",
+      "Sortie 16h - Personne 2": assignment.sixteen[1] || "",
+      "Nombre personnes 18h": assignment.eighteen.length,
+      "Nombre personnes 16h": assignment.sixteen.length,
+      "Total personnes": assignment.eighteen.length + assignment.sixteen.length,
+      "Absents": assignment.absents?.join("; ") || "",
+      "Nombre absents": assignment.absents?.length || 0,
+      "Postes manquants": assignment.missing ?? 0,
+    };
+  });
 }
 
 /**
