@@ -79,6 +79,10 @@ export function AdminPlanner() {
 
       if (error) throw error;
 
+      // Mettre à jour le store avec les nouvelles données
+      const { generateSchedule } = useScheduleStore.getState();
+      generateSchedule();
+
       toast({
         title: "Planning généré et sauvegardé",
         description: `${scheduleAssignments.length} jours ont été générés et enregistrés avec succès.`,
