@@ -7,10 +7,11 @@ import { Download, Upload, FileText, Calendar as CalendarIcon, Trash2 } from 'lu
 import { useScheduleStore } from '@/store/useScheduleStore';
 import { exportToCSV, exportToICS, exportToJSON, importFromJSON, downloadFile } from '@/lib/export';
 import { clearAllData } from '@/lib/storage';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
 export function ExportToolbar() {
+  const { toast } = useToast();
   const { 
     teamMembers, 
     assignments, 

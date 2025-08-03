@@ -7,47 +7,58 @@ import type { Assignment, TeamMember } from './types';
 const TIMEZONE = 'Europe/Paris';
 
 /**
+ * Formate les données pour l'export CSV selon le format spécifié
+ */
+function formatForCSV(assignments: Assignment[]) {
+  return assignments.map((assignment) => ({
+    Date: formatInTimeZone(new Date(assignment.dateISO), TIMEZONE, 'dd/MM/yyyy'),
+    "18h - 1": assignment.eighteen[0] || "",
+    "18h - 2": assignment.eighteen[1] || "",
+    "18h - 3": assignment.eighteen[2] || "",
+    "16h - 1": assignment.sixteen[0] || "",
+    "16h - 2": assignment.sixteen[1] || "",
+    Absents: assignment.absents?.join("; ") || "",
+    Manquants: assignment.missing ?? 0,
+  }));
+}
+
+/**
  * Exporte le planning au format CSV avec PapaParse
  */
 export function exportToCSV(assignments: Assignment[]): string {
-  const data = assignments.map(assignment => {
-    const date = formatInTimeZone(new Date(assignment.dateISO), TIMEZONE, 'dd/MM/yyyy');
-    const dayName = formatInTimeZone(new Date(assignment.dateISO), TIMEZONE, 'EEEE');
-    
-    // Préparer les colonnes pour les créneaux 18h (max 3 personnes)
-    const eighteen = assignment.eighteen.concat(['', '', '']).slice(0, 3);
-    
-    // Préparer les colonnes pour les créneaux 16h (max 2 personnes)
-    const sixteen = assignment.sixteen.concat(['', '']).slice(0, 2);
-    
-    // Informations sur les absents et les postes manquants
-    const absentsList = assignment.absents.join(', ') || '-';
-    const missingCount = assignment.missing > 0 ? assignment.missing.toString() : '-';
-    
-    return {
-      'Date': date,
-      'Jour': dayName,
-      'Service 18h - Personne 1': eighteen[0],
-      'Service 18h - Personne 2': eighteen[1],
-      'Service 18h - Personne 3': eighteen[2],
-      'Sortie 16h - Personne 1': sixteen[0],
-      'Sortie 16h - Personne 2': sixteen[1],
-      'Absents': absentsList,
-      'Postes manquants': missingCount
-    };
-  });
-
-  return unparse(data, {
+  const formattedData = formatForCSV(assignments);
+  
+  return unparse(formattedData, {
+    quotes: false,
+    delimiter: ",",
     header: true,
-    delimiter: ',',
-    quotes: true,
-    quoteChar: '"',
-    escapeChar: '"'
   });
 }
 
 /**
- * Télécharge un fichier
+ * Télécharge un fichier CSV
+ */
+export function downloadCSV(data: any[], filename: string = "planning.csv") {
+  const csv = unparse(data, {
+    quotes: false,
+    delimiter: ",",
+    header: true,
+  });
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Télécharge un fichier générique
  */
 export function downloadFile(content: string, filename: string, type: string = 'text/plain') {
   const blob = new Blob([content], { type });
@@ -186,5 +197,42 @@ export function importFromJSON(jsonContent: string) {
     return data;
   } catch (error) {
     throw new Error('Impossible de lire le fichier JSON');
+  }
+}
+
+/**
+ * Exporte les rotations directement depuis Supabase au format CSV
+ */
+export async function exportRotationCSVFromSupabase(supabase: any, filename: string = "planning_rotation.csv") {
+  try {
+    const { data: rotations, error } = await supabase
+      .from("rotations")
+      .select("*")
+      .order("date", { ascending: true });
+
+    if (error) {
+      throw new Error(`Erreur lors de la récupération des données: ${error.message}`);
+    }
+
+    if (!rotations || rotations.length === 0) {
+      throw new Error("Aucune donnée de rotation trouvée");
+    }
+
+    // Convertir le format Supabase vers le format Assignment
+    const assignments = rotations.map(rotation => ({
+      dateISO: rotation.date,
+      eighteen: rotation.eighteen || [],
+      sixteen: rotation.sixteen || [],
+      absents: rotation.absents || [],
+      missing: rotation.missing || 0,
+    }));
+
+    const formatted = formatForCSV(assignments);
+    downloadCSV(formatted, filename);
+    
+    return { success: true, count: rotations.length };
+  } catch (error) {
+    console.error('Erreur export CSV depuis Supabase:', error);
+    throw error;
   }
 }
