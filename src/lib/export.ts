@@ -46,7 +46,7 @@ export function exportToCSV(assignments: Assignment[]): string {
   
   return unparse(formattedData, {
     quotes: false,
-    delimiter: ",",
+    delimiter: ";",
     header: true,
   });
 }
