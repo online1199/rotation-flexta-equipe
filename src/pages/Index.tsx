@@ -96,16 +96,10 @@ const Index = () => {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="list">
-                <div className="space-y-4">
-                  <ScheduleList />
-                  {assignments.length > 0 && <ExportToolbar />}
-                </div>
+                <ScheduleList />
               </TabsContent>
               <TabsContent value="calendar">
-                <div className="space-y-4">
-                  <CalendarView />
-                  {assignments.length > 0 && <ExportToolbar />}
-                </div>
+                <CalendarView />
               </TabsContent>
             </Tabs>
           );
