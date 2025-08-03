@@ -40,9 +40,9 @@
     --ring: 217 91% 31%;
 
     /* Couleurs spécifiques rotation */
-    --rotation-18h: 142 71% 45%;
+    --rotation-18h: 28 84% 60%;
     --rotation-18h-foreground: 0 0% 98%;
-    --rotation-16h: 28 84% 60%;
+    --rotation-16h: 142 71% 45%;
     --rotation-16h-foreground: 0 0% 98%;
 
     /* Couleurs statut */
@@ -109,9 +109,9 @@
     --input: 217 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
 
-    --rotation-18h: 142 71% 35%;
+    --rotation-18h: 28 84% 50%;
     --rotation-18h-foreground: 0 0% 98%;
-    --rotation-16h: 28 84% 50%;
+    --rotation-16h: 142 71% 35%;
     --rotation-16h-foreground: 0 0% 98%;
 
     --success: 142 71% 35%;
