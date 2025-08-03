@@ -32,6 +32,7 @@ interface ScheduleStore extends ScheduleState {
   
   // Supabase integration
   initializeFromSupabase: () => Promise<void>;
+  loadLatestScheduleForAdmin: () => Promise<boolean>;
 }
 
 const initialState: ScheduleState = {
@@ -306,6 +307,58 @@ export const useScheduleStore = create<ScheduleStore>()(
           console.log('✅ Successfully loaded', teamMembers.length, 'members from Supabase');
         } catch (error) {
           console.error('❌ Error initializing from Supabase:', error);
+        }
+      },
+
+      loadLatestScheduleForAdmin: async () => {
+        try {
+          console.log('🔄 Loading latest schedule for admin...');
+          
+          // Récupérer le dernier planning généré
+          const { data: latestRotations, error } = await supabase
+            .from('rotations')
+            .select('*')
+            .order('generated_at', { ascending: false })
+            .limit(50); // Prendre plus de rotations pour s'assurer d'avoir une période complète
+          
+          if (error) {
+            console.error('❌ Error loading latest rotations:', error);
+            return false;
+          }
+
+          if (!latestRotations || latestRotations.length === 0) {
+            console.log('📭 No rotations found');
+            return false;
+          }
+
+          // Grouper par generated_at et prendre le groupe le plus récent
+          const latestGeneratedAt = latestRotations[0].generated_at;
+          const latestGroup = latestRotations.filter(r => r.generated_at === latestGeneratedAt);
+
+          console.log('📅 Latest planning group:', latestGroup.length, 'days');
+
+          // Transformer en format d'assignments
+          const assignments = latestGroup
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .map(rotation => ({
+              dateISO: rotation.date,
+              eighteen: rotation.eighteen || [],
+              sixteen: rotation.sixteen || [],
+              absents: rotation.absents || [],
+              missing: rotation.missing || 0
+            }));
+
+          // Mettre à jour le store
+          set({ 
+            assignments,
+            currentStep: 2 // Aller directement à la vue liste/calendrier
+          });
+
+          console.log('✅ Latest schedule loaded successfully:', assignments.length, 'days');
+          return true;
+        } catch (error) {
+          console.error('❌ Error loading latest schedule:', error);
+          return false;
         }
       }
     }),

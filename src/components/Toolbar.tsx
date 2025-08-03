@@ -3,14 +3,18 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Download, Upload, FileText, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
+import { Download, Upload, FileText, Calendar as CalendarIcon, Trash2, History } from 'lucide-react';
 import { useScheduleStore } from '@/store/useScheduleStore';
 import { exportToCSV, exportToICS, exportToJSON, importFromJSON, downloadFile } from '@/lib/export';
 import { clearAllData } from '@/lib/storage';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
-export function Toolbar() {
+interface ToolbarProps {
+  onShowHistory?: () => void;
+}
+
+export function Toolbar({ onShowHistory }: ToolbarProps) {
   const { 
     teamMembers, 
     assignments, 
@@ -167,6 +171,19 @@ export function Toolbar() {
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
+      {/* Historique */}
+      {onShowHistory && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onShowHistory}
+          className="gap-2"
+        >
+          <History className="h-4 w-4" />
+          Historique
+        </Button>
+      )}
+
       {/* Export CSV */}
       <Button
         variant="outline"

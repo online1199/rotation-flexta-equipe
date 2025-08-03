@@ -15,7 +15,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LogOut, Loader2, Users, Calendar, Clock, List, CalendarDays, RotateCcw, Lock, History } from "lucide-react";
+import { LogOut, Loader2, Users, Calendar, Clock, List, CalendarDays, RotateCcw, Lock, History, ArrowLeft } from "lucide-react";
 import { useScheduleStore } from '@/store/useScheduleStore';
 import { Separator } from '@/components/ui/separator';
 
@@ -23,8 +23,9 @@ const Index = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const { profile, loading: profileLoading, isAdmin } = useProfile();
   const navigate = useNavigate();
-  const { currentStep, setCurrentStep, teamMembers, assignments, lockedDays, initializeFromSupabase } = useScheduleStore();
+  const { currentStep, setCurrentStep, teamMembers, assignments, lockedDays, initializeFromSupabase, loadLatestScheduleForAdmin } = useScheduleStore();
   const [view, setView] = useState<'list' | 'calendar'>('list');
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !profileLoading && !user) {
@@ -36,8 +37,14 @@ const Index = () => {
   useEffect(() => {
     if (user && !authLoading && !profileLoading) {
       initializeFromSupabase();
+      
+      // Pour les admins, charger automatiquement le dernier planning
+      if (isAdmin) {
+        console.log('👑 Admin detected, loading latest schedule...');
+        loadLatestScheduleForAdmin();
+      }
     }
-  }, [user, authLoading, profileLoading, initializeFromSupabase]);
+  }, [user, authLoading, profileLoading, initializeFromSupabase, loadLatestScheduleForAdmin, isAdmin]);
 
   if (authLoading || profileLoading) {
     return (
@@ -60,9 +67,23 @@ const Index = () => {
         case 2:
           return <AdminPlanner />;
         case 3:
-          return (
+          return showHistory ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowHistory(false)}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Retour au planning
+                </Button>
+              </div>
+              <RotationHistory />
+            </div>
+          ) : (
             <Tabs defaultValue="list" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="list" className="flex items-center gap-2">
                   <List className="h-4 w-4" />
                   Vue liste
@@ -71,19 +92,12 @@ const Index = () => {
                   <CalendarDays className="h-4 w-4" />
                   Vue calendrier
                 </TabsTrigger>
-                <TabsTrigger value="history" className="flex items-center gap-2">
-                  <History className="h-4 w-4" />
-                  Historique
-                </TabsTrigger>
               </TabsList>
               <TabsContent value="list">
                 <ScheduleList />
               </TabsContent>
               <TabsContent value="calendar">
                 <CalendarView />
-              </TabsContent>
-              <TabsContent value="history">
-                <RotationHistory />
               </TabsContent>
             </Tabs>
           );
@@ -154,7 +168,7 @@ const Index = () => {
                   Déconnexion
                 </Button>
                 <ThemeToggle />
-                {isAdmin && <Toolbar />}
+                {isAdmin && <Toolbar onShowHistory={() => setShowHistory(true)} />}
               </div>
             </div>
             
