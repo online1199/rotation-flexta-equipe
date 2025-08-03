@@ -7,6 +7,7 @@ import { CalendarView } from "@/components/CalendarView";
 import { ScheduleList } from "@/components/ScheduleList";
 import { TeamForm } from "@/components/TeamForm";
 import { AdminPlanner } from "@/components/AdminPlanner";
+import { PlannerParams } from "@/components/PlannerParams";
 import { UserView } from "@/components/UserView";
 import { RotationHistory } from "@/components/RotationHistory";
 import { Toolbar } from "@/components/Toolbar";
@@ -66,7 +67,7 @@ const Index = () => {
         case 1:
           return <TeamForm />;
         case 2:
-          return <AdminPlanner />;
+          return <PlannerParams />;
         case 3:
           return showHistory ? (
             <div className="space-y-4">
