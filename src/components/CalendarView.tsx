@@ -54,7 +54,6 @@ export function CalendarView() {
 
   const MemberBadge = ({ name, shift }: { name: string; shift: '18h' | '16h' }) => {
     const color = SHIFT_COLORS[shift];
-    const initials = generateInitials(name);
     
     return (
       <div
@@ -63,7 +62,7 @@ export function CalendarView() {
           backgroundColor: color,
         }}
       >
-        <span className="font-semibold">{initials}</span>
+        <span className="font-semibold">{name}</span>
         <span className="text-[10px] opacity-90">{shift}</span>
       </div>
     );
