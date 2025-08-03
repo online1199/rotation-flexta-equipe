@@ -31,7 +31,11 @@ interface PlanningGroup {
   generated_at: string;
 }
 
-export function RotationHistory() {
+interface RotationHistoryProps {
+  onPlanningLoaded?: () => void;
+}
+
+export function RotationHistory({ onPlanningLoaded }: RotationHistoryProps) {
   const { isAdmin } = useProfile();
   const { toast } = useToast();
   const { setCurrentStep } = useScheduleStore();
@@ -115,7 +119,10 @@ export function RotationHistory() {
     useScheduleStore.setState({ assignments });
     
     // Passer à la vue liste
-    setCurrentStep(2);
+    setCurrentStep(3);
+    
+    // Fermer l'historique si la callback est fournie
+    onPlanningLoaded?.();
     
     toast({
       title: "Planning chargé",

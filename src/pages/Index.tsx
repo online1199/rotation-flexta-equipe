@@ -79,7 +79,7 @@ const Index = () => {
                   Retour au planning
                 </Button>
               </div>
-              <RotationHistory />
+              <RotationHistory onPlanningLoaded={() => setShowHistory(false)} />
             </div>
           ) : (
             <Tabs defaultValue="list" className="w-full">
